@@ -1,209 +1,92 @@
-mod major_pentatonic_scale_walker;
-mod major_scale_walker;
-mod minor_pentatonic_scale_walker;
-mod minor_scale_walker;
-
-use self::{
-    major_pentatonic_scale_walker::MajorPentatonicScaleWalker,
-    major_scale_walker::MajorScaleWalker,
-    minor_pentatonic_scale_walker::MinorPentatonicScaleWalker,
-    minor_scale_walker::MinorScaleWalker,
-};
-
 use super::Tone;
-use crate::tonality::Pitch;
-use std::{error::Error, fmt::Display};
+use std::sync::Arc;
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Scale {
-    Major(Tone),
-    Minor(Tone),
-    MajorPentatonic(Tone),
-    MinorPentatonic(Tone),
+mod major_scale;
+mod minor_scale;
+
+pub use major_scale::*;
+pub use minor_scale::*;
+
+pub trait Scale {
+    fn tonic(&self) -> &Tone;
+
+    fn is_on_scale(&self, tone: &Tone) -> bool;
 }
 
-impl Scale {
-    fn get_walker(&self) -> Walker {
-        match self {
-            Scale::Major(tonic) => Walker {
-                walker: Box::new(MajorScaleWalker::default()),
-                current: tonic.clone(),
-            },
-            Scale::Minor(tonic) => Walker {
-                walker: Box::new(MinorScaleWalker::default()),
-                current: tonic.clone(),
-            },
-            Scale::MajorPentatonic(tonic) => Walker {
-                walker: Box::new(MajorPentatonicScaleWalker::default()),
-                current: tonic.clone(),
-            },
-            Scale::MinorPentatonic(tonic) => Walker {
-                walker: Box::new(MinorPentatonicScaleWalker::default()),
-                current: tonic.clone(),
-            },
-        }
-    }
+pub trait IntoScaler<S> {
+    fn into_scaler(self) -> Scaler<S>;
+}
 
-    pub fn into_relative(self) -> Option<Scale> {
-        match self {
-            Scale::Major(tonic) => Some(Self::Minor(tonic.transpose(-3))),
-            Scale::Minor(tonic) => Some(Self::Major(tonic.transpose(3))),
-            Scale::MajorPentatonic(tonic) => Some(Self::MinorPentatonic(tonic.transpose(-3))),
-            Scale::MinorPentatonic(tonic) => Some(Self::MajorPentatonic(tonic.transpose(3))),
-        }
-    }
-
-    pub fn transpose(self, transpose: i32) -> Self {
-        match self {
-            Scale::Major(tonic) => Self::Major(tonic.transpose(transpose)),
-            Scale::Minor(tonic) => Self::Minor(tonic.transpose(transpose)),
-            Scale::MajorPentatonic(tonic) => Scale::MajorPentatonic(tonic.transpose(transpose)),
-            Scale::MinorPentatonic(tonic) => Scale::MinorPentatonic(tonic.transpose(transpose)),
-        }
-    }
-
-    pub fn composed_notes(&self) -> Vec<Tone> {
-        let waler = self.get_walker();
-        waler.into_iter().collect()
-    }
-
-    pub fn tonic(&self) -> &Tone {
-        match self {
-            Scale::Major(tonic) => tonic,
-            Scale::Minor(tonic) => tonic,
-            Scale::MajorPentatonic(tonic) => tonic,
-            Scale::MinorPentatonic(tonic) => tonic,
-        }
-    }
-
-    pub fn degree(&self, from: &Tone, to: &Tone) -> Result<Degree, ScaleError> {
-        let from_index = self.composed_notes().iter().position(|t| t == from);
-        let to_index = self.composed_notes().iter().position(|t| t == to);
-        match (from_index, to_index) {
-            (Some(from), Some(to)) => Ok(Degree(((to as i32 - from as i32).abs() + 1) as usize)),
-            _ => Err(ScaleError::NotFound),
-        }
-    }
-
-    pub fn degree_from_tonic(&self, other: &Tone) -> Result<Degree, ScaleError> {
-        self.degree(self.tonic(), other)
-    }
-
-    pub fn dominant(&self) -> Tone {
-        let dominant = Degree::new(5);
-        self.composed_notes()
-            .iter()
-            .find(|t| self.degree_from_tonic(t).unwrap() == dominant)
-            .unwrap()
+impl<T: Scale + Sized> IntoScaler<T> for T {
+    fn into_scaler(self) -> Scaler<T> {
+        let vec: Vec<Tone> = self
+            .tonic()
             .clone()
+            .into_iter()
+            .filter(|t| self.is_on_scale(t))
+            .collect();
+        let iter = ScaleToneIter {
+            inner: vec.as_slice().into(),
+            index: 0,
+        };
+        Scaler::<T> {
+            scale: Arc::new(self),
+            iter,
+        }
     }
 }
 
-struct Walker {
-    walker: Box<dyn Iterator<Item = i32>>,
-    current: Tone,
+#[derive(Debug, Clone)]
+struct ScaleToneIter {
+    inner: Arc<[Tone]>,
+    index: usize,
 }
 
-impl Iterator for Walker {
+impl Iterator for ScaleToneIter {
     type Item = Tone;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let Some(interval) = self.walker.next() else { return None };
-        let c = self.current.clone();
-        let mut transposed = self.current.clone().transpose(interval);
-        if c.tone() == transposed.tone() {
-            transposed = transposed.flip_accidential();
+        match self.inner.len() > self.index {
+            true => {
+                let current = self.inner[self.index].clone();
+                self.index += 1;
+                Some(current)
+            }
+            false => None,
         }
-        self.current = transposed;
-        Some(c)
     }
 }
 
-#[cfg(test)]
-mod test {
-    use crate::tonality::{AccidentalSymbol, Degree, Scale, ScaleError, Tone, ToneSymbol};
+#[derive(Debug)]
+pub struct Scaler<S> {
+    iter: ScaleToneIter,
+    scale: Arc<S>,
+}
 
-    #[test]
-    fn major_scale() {
-        use AccidentalSymbol::*;
-        use ToneSymbol::*;
+impl<S: Scale> Clone for Scaler<S> {
+    fn clone(&self) -> Self {
+        Self {
+            iter: self.iter.clone(),
+            scale: self.scale.clone(),
+        }
+    }
+}
 
-        let a_major = Scale::Major(Tone::new(A, Natural));
-        assert_eq!(
-            a_major.composed_notes(),
-            vec![
-                Tone::new(A, Natural),
-                Tone::new(B, Natural),
-                Tone::new(C, Sharp),
-                Tone::new(D, Natural),
-                Tone::new(E, Natural),
-                Tone::new(F, Sharp),
-                Tone::new(G, Sharp)
-            ]
-        );
+impl<S> Iterator for Scaler<S> {
+    type Item = Tone;
 
-        let e_flat_major = Scale::Major(Tone::new(E, Flat));
-        assert_eq!(
-            e_flat_major.composed_notes(),
-            vec![
-                Tone::new(E, Flat),
-                Tone::new(F, Natural),
-                Tone::new(G, Natural),
-                Tone::new(A, Flat),
-                Tone::new(B, Flat),
-                Tone::new(C, Natural),
-                Tone::new(D, Natural),
-            ]
-        );
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+}
+
+impl<S: Scale> Scale for Scaler<S> {
+    fn tonic(&self) -> &Tone {
+        self.scale.tonic()
     }
 
-    #[test]
-    fn minor_scale() {
-        use AccidentalSymbol::*;
-        use ToneSymbol::*;
-        let scale = Scale::Minor(Tone::new(A, Natural));
-        assert_eq!(
-            scale.composed_notes(),
-            vec![
-                Tone::new(A, Natural),
-                Tone::new(B, Natural),
-                Tone::new(C, Natural),
-                Tone::new(D, Natural),
-                Tone::new(E, Natural),
-                Tone::new(F, Natural),
-                Tone::new(G, Natural)
-            ]
-        )
-    }
-
-    #[test]
-    fn degree() {
-        use AccidentalSymbol::*;
-        use ToneSymbol::*;
-        assert_eq!(
-            Scale::Major(Tone::new(A, Natural))
-                .degree(&Tone::new(A, Natural), &Tone::new(C, Sharp))
-                .unwrap(),
-            Degree::new(3)
-        );
-        assert_eq!(
-            Scale::Major(Tone::new(C, Natural))
-                .degree(&Tone::new(C, Natural), &Tone::new(C, Natural))
-                .unwrap(),
-            Degree::new(1)
-        );
-        assert_eq!(
-            Scale::Major(Tone::new(C, Natural))
-                .degree(&Tone::new(E, Natural), &Tone::new(C, Natural))
-                .unwrap(),
-            Degree::new(3)
-        );
-        assert_eq!(
-            Scale::Major(Tone::new(C, Natural))
-                .degree(&Tone::new(C, Sharp), &Tone::new(C, Natural))
-                .unwrap_err(),
-            ScaleError::NotFound
-        );
+    fn is_on_scale(&self, tone: &Tone) -> bool {
+        self.scale.is_on_scale(tone)
     }
 }
 
@@ -216,15 +99,38 @@ impl Degree {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
-pub enum ScaleError {
-    NotFound,
-}
-
-impl Display for ScaleError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ScaleError")
+impl<S: Scale> Scaler<S> {
+    pub fn get_interval(&self, tone: Tone) -> Option<Degree> {
+        if !self.is_on_scale(&tone) {
+            return None;
+        }
+        let mut iter = self.clone();
+        let index = iter.position(|t| t == tone).unwrap();
+        Some(Degree(index + 1))
     }
 }
 
-impl Error for ScaleError {}
+#[cfg(test)]
+mod tests {
+    use crate::tonality::{AccidentalSymbol, Degree, IntoScaler, Scale, Tone, ToneSymbol};
+    use AccidentalSymbol::*;
+    use ToneSymbol::*;
+
+    struct RandomScale(Tone);
+    impl Scale for RandomScale {
+        fn tonic(&self) -> &Tone {
+            &self.0
+        }
+
+        fn is_on_scale(&self, _: &Tone) -> bool {
+            true
+        }
+    }
+
+    #[test]
+    fn get_interval() {
+        let c = RandomScale(Tone::new(C, Natural)).into_scaler();
+        assert_eq!(c.get_interval(Tone::new(C, Natural)), Some(Degree::new(1)));
+        assert_eq!(c.get_interval(Tone::new(B, Natural)), Some(Degree::new(12)));
+    }
+}

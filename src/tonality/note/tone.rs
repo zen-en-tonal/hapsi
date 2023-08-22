@@ -175,11 +175,37 @@ impl PartialOrd for Tone {
     }
 }
 
-impl Iterator for Tone {
+impl IntoIterator for Tone {
     type Item = Self;
 
+    type IntoIter = ToneIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        ToneIter {
+            start: self.index(),
+            index: 0,
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct ToneIter {
+    start: usize,
+    index: usize,
+}
+
+impl Iterator for ToneIter {
+    type Item = Tone;
+
     fn next(&mut self) -> Option<Self::Item> {
-        todo!()
+        match self.index < 12 {
+            true => {
+                let current = Some((self.index + self.start).into());
+                self.index += 1;
+                current
+            }
+            false => None,
+        }
     }
 }
 
@@ -234,5 +260,23 @@ mod tests {
         assert_eq!(Tone::new(C, Natural).transpose(-1), Tone::new(B, Natural));
         assert_eq!(Tone::new(C, Natural).transpose(-12), Tone::new(C, Natural));
         assert_eq!(Tone::new(C, Natural).transpose(0), Tone::new(C, Natural));
+    }
+
+    #[test]
+    fn into_iter() {
+        let mut tone = Tone::new(A, Natural).into_iter();
+        assert_eq!(tone.next(), Some(Tone::new(A, Natural)));
+        assert_eq!(tone.next(), Some(Tone::new(A, Sharp)));
+        assert_eq!(tone.next(), Some(Tone::new(B, Natural)));
+        assert_eq!(tone.next(), Some(Tone::new(C, Natural)));
+        assert_eq!(tone.next(), Some(Tone::new(C, Sharp)));
+        assert_eq!(tone.next(), Some(Tone::new(D, Natural)));
+        assert_eq!(tone.next(), Some(Tone::new(D, Sharp)));
+        assert_eq!(tone.next(), Some(Tone::new(E, Natural)));
+        assert_eq!(tone.next(), Some(Tone::new(F, Natural)));
+        assert_eq!(tone.next(), Some(Tone::new(F, Sharp)));
+        assert_eq!(tone.next(), Some(Tone::new(G, Natural)));
+        assert_eq!(tone.next(), Some(Tone::new(G, Sharp)));
+        assert_eq!(tone.next(), None);
     }
 }
