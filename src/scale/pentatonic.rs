@@ -3,12 +3,12 @@ use crate::core::tone::{Chroma, Tone};
 use crate::twelve_tet;
 
 #[derive(Debug, Clone, Copy)]
-pub struct Diatonic {
+pub struct Pentatonic {
     key: Tone,
     quality: Quality,
 }
 
-impl Diatonic {
+impl Pentatonic {
     pub fn major(key: &twelve_tet::tone::Tone) -> Self {
         Self {
             key: key.clone().into(),
@@ -34,15 +34,15 @@ pub enum Quality {
     Minor,
 }
 
-impl Scale for Diatonic {
+impl Scale for Pentatonic {
     fn key(&self) -> Tone {
         self.key.into()
     }
 
     fn distances(&self) -> Vec<i32> {
         match self.quality() {
-            Quality::Major => [0, 2, 4, 5, 7, 9, 11].to_vec(),
-            Quality::Minor => [0, 2, 3, 5, 7, 8, 10].to_vec(),
+            Quality::Major => [0, 2, 4, 7, 9].to_vec(),
+            Quality::Minor => [0, 3, 5, 7, 10].to_vec(),
         }
     }
 
@@ -60,28 +60,24 @@ mod tests {
 
     #[test]
     fn major() {
-        let scale = super::Diatonic::major(&Tone::new(C, Natural));
+        let scale = super::Pentatonic::major(&Tone::new(C, Natural));
         let mut tones = scale.tones().into_iter();
         assert_eq!(tones.next(), Some(Tone::new(C, Natural).into()));
         assert_eq!(tones.next(), Some(Tone::new(D, Natural).into()));
         assert_eq!(tones.next(), Some(Tone::new(E, Natural).into()));
-        assert_eq!(tones.next(), Some(Tone::new(F, Natural).into()));
         assert_eq!(tones.next(), Some(Tone::new(G, Natural).into()));
         assert_eq!(tones.next(), Some(Tone::new(A, Natural).into()));
-        assert_eq!(tones.next(), Some(Tone::new(B, Natural).into()));
         assert_eq!(tones.next(), None);
     }
 
     #[test]
     fn minor() {
-        let scale = super::Diatonic::minor(&Tone::new(A, Natural));
+        let scale = super::Pentatonic::minor(&Tone::new(A, Natural));
         let mut tones = scale.tones().into_iter();
         assert_eq!(tones.next(), Some(Tone::new(A, Natural).into()));
-        assert_eq!(tones.next(), Some(Tone::new(B, Natural).into()));
         assert_eq!(tones.next(), Some(Tone::new(C, Natural).into()));
         assert_eq!(tones.next(), Some(Tone::new(D, Natural).into()));
         assert_eq!(tones.next(), Some(Tone::new(E, Natural).into()));
-        assert_eq!(tones.next(), Some(Tone::new(F, Natural).into()));
         assert_eq!(tones.next(), Some(Tone::new(G, Natural).into()));
         assert_eq!(tones.next(), None);
     }

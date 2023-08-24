@@ -1,10 +1,7 @@
-use super::tone::{Chroma, Tone};
-
-/// 基準からの距離
-pub trait Interval {
-    type Interval;
-    fn distance(&self, to: &Tone) -> Option<Self::Interval>;
-}
+use super::{
+    interval::Interval,
+    tone::{Chroma, Tone},
+};
 
 pub trait Scale {
     /// 主音
@@ -17,14 +14,14 @@ pub trait Scale {
 
     fn tones(&self) -> Vec<Tone> {
         self.chroma()
-            .tones()
+            .tones_with_start(&self.key())
             .into_iter()
             .filter(|t| self.distance(t).is_some())
             .collect()
     }
 }
 
-impl<T: Scale + ?Sized> Interval for T {
+impl<T: ?Sized + Scale> Interval for T {
     type Interval = Degree;
 
     fn distance(&self, to: &Tone) -> Option<Self::Interval> {
@@ -42,10 +39,14 @@ pub struct Degree {
 }
 
 impl Degree {
-    pub fn new(from: &Tone, to: &Tone) -> Self {
+    fn new(from: &Tone, to: &Tone) -> Self {
         Self {
             from: from.clone(),
             to: to.clone(),
         }
+    }
+
+    pub fn interval_in_step(&self) -> i32 {
+        self.to.step() as i32 - self.from.step() as i32
     }
 }

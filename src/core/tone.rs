@@ -45,7 +45,11 @@ impl Chroma {
     }
 
     pub fn tones(&self) -> Vec<Tone> {
-        (0..self.size())
+        self.tones_with_start(&Tone::new(0, self.size()))
+    }
+
+    pub fn tones_with_start(&self, start: &Tone) -> Vec<Tone> {
+        (start.step()..start.step() + self.size())
             .into_iter()
             .map(|i| self.tone(i as i32))
             .collect()
