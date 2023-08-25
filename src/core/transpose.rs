@@ -7,12 +7,6 @@ pub trait Transpose: Sized {
     fn transpose(self, transpose: i32) -> Self;
 }
 
-impl Transpose for Tone {
-    fn transpose(self, transpose: i32) -> Self {
-        Chroma::new(self.chroma_size()).tone(self.step() as i32 + transpose)
-    }
-}
-
 impl Transpose for Pitch {
     /// 音高を上下させる。
     /// ```rust
@@ -39,9 +33,28 @@ impl Transpose for Pitch {
     ///     pitch.clone().transpose(-5),
     ///     Pitch::new(chroma.tone(7), -1)
     /// );
+    /// assert_eq!(
+    ///     pitch.clone().transpose(-24),
+    ///     Pitch::new(chroma.tone(0), -2)
+    /// );
     /// ```
     fn transpose(self, transpose: i32) -> Self {
-        let oct = transpose / self.tone().chroma_size() as i32;
-        Pitch::new(self.tone().transpose(transpose), self.oct() + oct)
+        if transpose >= 0 {
+            let oct = transpose / self.tone().chroma_size() as i32;
+            Pitch::new(self.tone().transpose(transpose), self.oct() + oct)
+        } else {
+            let oct = transpose / self.tone().chroma_size() as i32;
+            let oct = if oct == 0 { -1 } else { oct };
+            Pitch::new(self.tone().transpose(transpose), self.oct() + oct)
+        }
+    }
+}
+
+impl<T: From<Tone> + Into<Tone>> Transpose for T {
+    fn transpose(self, transpose: i32) -> Self {
+        let tone: Tone = self.into();
+        Chroma::new(tone.chroma_size())
+            .tone(tone.step() as i32 + transpose)
+            .into()
     }
 }

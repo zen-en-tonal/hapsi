@@ -86,6 +86,5 @@ impl Tone {
         self.step() as f32 / self.chroma_size() as f32
     }
 }
-
 #[cfg(test)]
 mod tests {}

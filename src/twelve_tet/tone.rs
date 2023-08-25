@@ -1,9 +1,17 @@
 use std::{error::Error, fmt::Display};
 
 use crate::core::{
+    self,
     tone::{self, Chroma},
-    transpose::Transpose,
 };
+
+pub fn tone(tone: ToneSymbol, accidental: AccidentalSymbol) -> core::tone::Tone {
+    Tone::new(tone, accidental).into()
+}
+
+pub fn tones() -> Vec<core::tone::Tone> {
+    Chroma::new(12).tones()
+}
 
 #[derive(Debug, Clone, Copy, Hash)]
 pub struct Tone {
@@ -123,12 +131,5 @@ impl PartialOrd for Tone {
         let s: i32 = self.clone().into();
         let o: i32 = other.clone().into();
         s.partial_cmp(&o)
-    }
-}
-
-impl Transpose for Tone {
-    fn transpose(self, transpose: i32) -> Self {
-        let tone: tone::Tone = self.into();
-        tone.transpose(transpose).try_into().unwrap()
     }
 }
