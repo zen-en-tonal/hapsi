@@ -1,6 +1,6 @@
 use crate::core::{ChromaLike, ToneLike};
 
-#[derive(Debug, Clone, Copy, Hash)]
+#[derive(Debug, Clone, Copy, Hash, Eq)]
 pub struct Tone {
     tone: ToneSymbol,
     accidental: AccidentalSymbol,
@@ -32,7 +32,7 @@ impl Tone {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 #[repr(i32)]
 pub enum ToneSymbol {
     C = 0,
@@ -44,7 +44,7 @@ pub enum ToneSymbol {
     B = 11,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Hash, Eq)]
 #[repr(i32)]
 pub enum AccidentalSymbol {
     Flat = -1,
