@@ -21,6 +21,10 @@ pub trait Scale {
             .collect()
     }
 
+    fn is_on_scale(&self, tone: &Tone) -> bool {
+        self.tones().contains(tone)
+    }
+
     fn get_by_degree(&self, degree: &Degree) -> Tone {
         let interval = self.get_interval_by_degree(degree);
         self.key().transpose(interval)
@@ -51,7 +55,7 @@ impl<T: ?Sized + Scale> Interval for T {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Hash)]
 pub struct Degree(usize);
 
 impl Degree {
