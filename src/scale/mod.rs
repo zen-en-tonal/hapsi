@@ -1,2 +1,5 @@
-pub mod diatonic;
-pub mod pentatonic;
+mod diatonic;
+mod pentatonic;
+
+pub use diatonic::Diatonic;
+pub use pentatonic::Pentatonic;

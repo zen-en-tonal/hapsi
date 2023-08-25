@@ -1,1 +1,3 @@
-pub mod tone;
+mod tone;
+
+pub use tone::*;

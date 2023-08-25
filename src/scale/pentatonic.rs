@@ -1,6 +1,4 @@
-use crate::core::scale::Scale;
-use crate::core::tone::{Chroma, Tone};
-use crate::twelve_tet;
+use crate::prelude::*;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Pentatonic {
@@ -9,14 +7,14 @@ pub struct Pentatonic {
 }
 
 impl Pentatonic {
-    pub fn major(key: &twelve_tet::tone::Tone) -> Self {
+    pub fn major(key: &Tone) -> Self {
         Self {
             key: key.clone().into(),
             quality: Quality::Major,
         }
     }
 
-    pub fn minor(key: &twelve_tet::tone::Tone) -> Self {
+    pub fn minor(key: &Tone) -> Self {
         Self {
             key: key.clone().into(),
             quality: Quality::Minor,
@@ -47,16 +45,17 @@ impl Scale for Pentatonic {
     }
 
     fn chroma(&self) -> Chroma {
-        Chroma::new(12)
+        Chroma
     }
+
+    type ToneLike = Tone;
+
+    type ChromaLike = Chroma;
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::core::scale::Scale;
-    use crate::twelve_tet::tone::AccidentalSymbol::*;
-    use crate::twelve_tet::tone::Tone;
-    use crate::twelve_tet::tone::ToneSymbol::*;
+    use crate::prelude::*;
 
     #[test]
     fn major() {

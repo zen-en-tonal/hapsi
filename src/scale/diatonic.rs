@@ -1,6 +1,4 @@
-use crate::core::scale::Scale;
-use crate::core::tone::{Chroma, Tone};
-use crate::twelve_tet;
+use crate::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Diatonic {
@@ -9,14 +7,14 @@ pub struct Diatonic {
 }
 
 impl Diatonic {
-    pub fn major(key: &twelve_tet::tone::Tone) -> Self {
+    pub fn major(key: &Tone) -> Self {
         Self {
             key: key.clone().into(),
             quality: Quality::Major,
         }
     }
 
-    pub fn minor(key: &twelve_tet::tone::Tone) -> Self {
+    pub fn minor(key: &Tone) -> Self {
         Self {
             key: key.clone().into(),
             quality: Quality::Minor,
@@ -46,20 +44,18 @@ impl Scale for Diatonic {
         }
     }
 
-    fn chroma(&self) -> Chroma {
-        Chroma::new(12)
+    type ToneLike = Tone;
+
+    type ChromaLike = Chroma;
+
+    fn chroma(&self) -> Self::ChromaLike {
+        Chroma
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::core::interval::Interval;
-    use crate::core::scale::Degree;
-    use crate::core::scale::Scale;
-    use crate::twelve_tet::tone::tone;
-    use crate::twelve_tet::tone::AccidentalSymbol::*;
-    use crate::twelve_tet::tone::Tone;
-    use crate::twelve_tet::tone::ToneSymbol::*;
+    use crate::prelude::*;
 
     #[test]
     fn major() {
@@ -92,22 +88,22 @@ mod tests {
     #[test]
     fn degree() {
         let scale = super::Diatonic::minor(&Tone::new(A, Natural));
-        assert_eq!(scale.distance(&tone(A, Natural)), Some(Degree::new(1)));
+        assert_eq!(scale.distance(&Tone::new(A, Natural)), Some(Degree::new(1)));
         assert_eq!(
-            scale.distance(&tone(B, Natural).into()),
+            scale.distance(&Tone::new(B, Natural).into()),
             Some(Degree::new(2))
         );
         assert_eq!(
-            scale.distance(&tone(C, Natural).into()),
+            scale.distance(&Tone::new(C, Natural).into()),
             Some(Degree::new(3))
         );
-        assert_eq!(scale.distance(&tone(C, Sharp).into()), None);
+        assert_eq!(scale.distance(&Tone::new(C, Sharp).into()), None);
     }
 
     #[test]
     fn get_by_degree() {
         let scale = super::Diatonic::minor(&Tone::new(A, Natural));
-        assert_eq!(scale.get_by_degree(&Degree::new(1)), tone(A, Natural));
-        assert_eq!(scale.get_by_degree(&Degree::new(13)), tone(F, Natural));
+        assert_eq!(scale.get_by_degree(&Degree::new(1)), Tone::new(A, Natural));
+        assert_eq!(scale.get_by_degree(&Degree::new(13)), Tone::new(F, Natural));
     }
 }

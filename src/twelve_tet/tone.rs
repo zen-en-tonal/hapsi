@@ -1,17 +1,4 @@
-use std::{error::Error, fmt::Display};
-
-use crate::core::{
-    self,
-    tone::{self, Chroma},
-};
-
-pub fn tone(tone: ToneSymbol, accidental: AccidentalSymbol) -> core::tone::Tone {
-    Tone::new(tone, accidental).into()
-}
-
-pub fn tones() -> Vec<core::tone::Tone> {
-    Chroma::new(12).tones()
-}
+use crate::core::{ChromaLike, ToneLike};
 
 #[derive(Debug, Clone, Copy, Hash)]
 pub struct Tone {
@@ -65,25 +52,58 @@ pub enum AccidentalSymbol {
     Sharp = 1,
 }
 
-impl From<Tone> for tone::Tone {
-    fn from(value: Tone) -> Self {
-        let chroma = Chroma::new(12);
-        chroma.tone(value.into())
+impl ToneLike for Tone {
+    fn step(&self) -> usize {
+        (self.tone as i32 + self.accidental as i32) as usize
+    }
+
+    fn chroma_size(&self) -> usize {
+        12
     }
 }
 
-impl TryFrom<tone::Tone> for Tone {
-    type Error = NonTwelveTetError;
+impl PartialEq for Tone {
+    fn eq(&self, other: &Self) -> bool {
+        self.step() == other.step()
+    }
+}
 
-    fn try_from(value: tone::Tone) -> Result<Self, Self::Error> {
+impl PartialOrd for Tone {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.step().partial_cmp(&other.step())
+    }
+}
+
+pub struct Chroma;
+
+impl ChromaLike for Chroma {
+    type Tone = Tone;
+
+    fn tone(&self, step: i32) -> Self::Tone {
+        let step = step % self.size() as i32;
+        if step < 0 {
+            return self.tone(self.size() as i32 + step);
+        }
+        step.into()
+    }
+
+    fn size(&self) -> usize {
+        12
+    }
+
+    fn distance(&self, from: &Self::Tone, to: &Self::Tone) -> usize {
+        match to >= from {
+            true => to.step() - from.step(),
+            false => to.step() + self.size() - from.step(),
+        }
+    }
+}
+
+impl From<i32> for Tone {
+    fn from(value: i32) -> Self {
         use AccidentalSymbol::*;
         use ToneSymbol::*;
-
-        if value.chroma_size() != 12 {
-            return Err(NonTwelveTetError);
-        }
-
-        Ok(match value.step() {
+        match value % 12 {
             0 => Tone::new(C, Natural),
             1 => Tone::new(C, Sharp),
             2 => Tone::new(D, Natural),
@@ -97,39 +117,6 @@ impl TryFrom<tone::Tone> for Tone {
             10 => Tone::new(A, Sharp),
             11 => Tone::new(B, Natural),
             _ => unreachable!(),
-        })
-    }
-}
-
-#[derive(Debug)]
-pub struct NonTwelveTetError;
-
-impl Display for NonTwelveTetError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for NonTwelveTetError {}
-
-impl From<Tone> for i32 {
-    fn from(value: Tone) -> Self {
-        value.tone as i32 + value.accidental as i32
-    }
-}
-
-impl PartialEq for Tone {
-    fn eq(&self, other: &Self) -> bool {
-        let s: i32 = self.clone().into();
-        let o: i32 = other.clone().into();
-        s == o
-    }
-}
-
-impl PartialOrd for Tone {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        let s: i32 = self.clone().into();
-        let o: i32 = other.clone().into();
-        s.partial_cmp(&o)
+        }
     }
 }

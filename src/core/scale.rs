@@ -1,19 +1,18 @@
-use super::{
-    interval::Interval,
-    tone::{Chroma, Tone},
-    transpose::Transpose,
-};
+use super::tone::{ChromaLike, ToneLike};
 
 pub trait Scale {
+    type ToneLike: ToneLike;
+    type ChromaLike: ChromaLike<Tone = Self::ToneLike>;
+
     /// 主音
-    fn key(&self) -> Tone;
+    fn key(&self) -> Self::ToneLike;
 
     /// 取りうる主音からの距離
     fn distances(&self) -> Vec<i32>;
 
-    fn chroma(&self) -> Chroma;
+    fn chroma(&self) -> Self::ChromaLike;
 
-    fn tones(&self) -> Vec<Tone> {
+    fn tones(&self) -> Vec<Self::ToneLike> {
         self.chroma()
             .tones_with_start(&self.key())
             .into_iter()
@@ -21,13 +20,13 @@ pub trait Scale {
             .collect()
     }
 
-    fn is_on_scale(&self, tone: &Tone) -> bool {
+    fn is_on_scale(&self, tone: &Self::ToneLike) -> bool {
         self.tones().contains(tone)
     }
 
-    fn get_by_degree(&self, degree: &Degree) -> Tone {
+    fn get_by_degree(&self, degree: &Degree) -> Self::ToneLike {
         let interval = self.get_interval_by_degree(degree);
-        self.key().transpose(interval)
+        self.chroma().tone(self.key().step() as i32 + interval)
     }
 
     // スケールの本質は、Degree <=> Intervalに変換する関数。
@@ -41,12 +40,8 @@ pub trait Scale {
     fn get_freq_rate_by_degree(&self, degree: &Degree) -> f32 {
         2.0_f32.powf(self.get_interval_by_degree(degree) as f32 / self.key().chroma_size() as f32)
     }
-}
 
-impl<T: ?Sized + Scale> Interval for T {
-    type Interval = Degree;
-
-    fn distance(&self, to: &Tone) -> Option<Self::Interval> {
+    fn distance(&self, to: &Self::ToneLike) -> Option<Degree> {
         let distance = self.chroma().distance(&self.key(), to) as i32;
         match self.distances().iter().position(|d| d == &distance) {
             Some(index) => Some(Degree(index + 1)),
