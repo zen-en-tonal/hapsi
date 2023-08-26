@@ -1,14 +1,13 @@
 use super::tone::ToneLike;
 
-/// 音高
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct Pitch<T> {
     tone: T,
-    oct: i32,
+    oct: usize,
 }
 
 impl<T> Pitch<T> {
-    pub fn new(tone: T, oct: i32) -> Self {
+    pub fn new(tone: T, oct: usize) -> Self {
         Self { tone, oct }
     }
 
@@ -16,7 +15,7 @@ impl<T> Pitch<T> {
         &self.tone
     }
 
-    pub fn oct(&self) -> i32 {
+    pub fn oct(&self) -> usize {
         self.oct
     }
 }

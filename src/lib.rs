@@ -1,4 +1,4 @@
-pub mod chord;
+// pub mod chord;
 pub mod core;
 pub mod detect;
 pub mod scale;

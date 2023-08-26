@@ -1,10 +1,9 @@
 use crate::prelude::*;
 
 pub fn detect_scale(tones: &[Tone]) -> Diatonic {
-    Chroma
-        .tones_with_start(&Tone::new(C, Natural))
-        .into_iter()
-        .map(|t| Diatonic::major(&t.try_into().unwrap()))
+    Chroma::new()
+        .tones()
+        .map(|t| Diatonic::major(t))
         .map(|scale| (scale.score(tones), scale))
         .max_by_key(|t| t.0)
         .unwrap()
@@ -15,7 +14,7 @@ pub trait Detect {
     fn score(&self, tones: &[Tone]) -> i32;
 }
 
-impl<T: Scale<ToneLike = Tone, ChromaLike = Chroma>> Detect for T {
+impl<T: ScaleLike<ToneLike = Tone, ChromaLike = Chroma>> Detect for T {
     fn score(&self, tones: &[Tone]) -> i32 {
         tones
             .iter()
@@ -41,6 +40,6 @@ mod tests {
             Tone::new(B, Natural),
         ];
         let scale = detect_scale(tones.as_slice());
-        assert_eq!(scale, Diatonic::major(&Tone::new(C, Natural)))
+        assert_eq!(scale.key(), &Tone::new(C, Natural))
     }
 }

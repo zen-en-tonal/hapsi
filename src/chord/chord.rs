@@ -27,24 +27,8 @@ pub trait ChordScale {
     fn chord_tones(&self, chord: &Chord) -> Vec<Self::ToneLike>;
 }
 
-impl<T: Scale> ChordScale for T {
+impl<T: ScaleLike> ChordScale for T {
     type ToneLike = T::ToneLike;
-
-    fn avoids(&self, chord: &Chord) -> Vec<Self::ToneLike> {
-        let mut vec = self
-            .chord_tones(chord)
-            .into_iter()
-            .flat_map(|t| {
-                vec![
-                    self.chroma().tone(t.step() as i32 - 1),
-                    self.chroma().tone(t.step() as i32 + 1),
-                ]
-            })
-            .filter(|t| self.is_on_scale(t))
-            .collect::<Vec<Self::ToneLike>>();
-        vec.dedup();
-        vec
-    }
 
     fn chord_tones(&self, chord: &Chord) -> Vec<Self::ToneLike> {
         chord
@@ -52,5 +36,21 @@ impl<T: Scale> ChordScale for T {
             .iter()
             .map(|d| self.get_by_degree(d))
             .collect()
+    }
+
+    fn avoids(&self, chord: &Chord) -> Vec<Self::ToneLike> {
+        let mut vec = self
+            .chord_tones(chord)
+            .into_iter()
+            .flat_map(|t| {
+                vec![
+                    self.chroma().get(t.step() as i32 - 1),
+                    self.chroma().get(t.step() as i32 + 1),
+                ]
+            })
+            .filter(|t| self.is_on_scale(t))
+            .collect::<Vec<Self::ToneLike>>();
+        vec.dedup();
+        vec
     }
 }

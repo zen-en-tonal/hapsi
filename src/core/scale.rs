@@ -1,64 +1,66 @@
-use super::tone::{ChromaLike, ToneLike};
+use super::{
+    distance::{Degree, Interval},
+    tone::{ChromaLike, ToneLike},
+};
 
-pub trait Scale {
+pub trait ScaleLike: Sized {
     type ToneLike: ToneLike;
     type ChromaLike: ChromaLike<Tone = Self::ToneLike>;
 
-    /// 主音
-    fn key(&self) -> Self::ToneLike;
+    /// Returns a key tone of this scale.
+    fn key(&self) -> &Self::ToneLike;
 
-    /// 取りうる主音からの距離
-    fn distances(&self) -> Vec<i32>;
+    /// Returns an array of all possible intervals from key.
+    fn intervals(&self) -> &[Interval];
 
-    fn chroma(&self) -> Self::ChromaLike;
+    /// Returns a `Chroma` that this scale depends on.
+    fn chroma(&self) -> &Self::ChromaLike;
 
-    fn tones(&self) -> Vec<Self::ToneLike> {
-        self.chroma()
-            .tones_with_start(&self.key())
-            .into_iter()
-            .filter(|t| self.distance(t).is_some())
-            .collect()
+    /// Returns an Iterator that enumerates tones which is belongs to this scale.
+    fn tones(&self) -> ToneIter<'_, Self> {
+        ToneIter::new(self)
     }
 
+    /// Returns a condition what `tone` is belongs to this scale or not.
     fn is_on_scale(&self, tone: &Self::ToneLike) -> bool {
-        self.tones().contains(tone)
+        self.tones().any(|t| t == tone)
     }
 
-    fn get_by_degree(&self, degree: &Degree) -> Self::ToneLike {
-        let interval = self.get_interval_by_degree(degree);
-        self.chroma().tone(self.key().step() as i32 + interval)
-    }
-
-    // スケールの本質は、Degree <=> Intervalに変換する関数。
-    fn get_interval_by_degree(&self, degree: &Degree) -> i32 {
-        let binding = self.distances();
-        *binding
-            .get((degree.0 as usize - 1) % binding.len())
-            .unwrap()
-    }
-
-    fn get_freq_rate_by_degree(&self, degree: &Degree) -> f32 {
-        2.0_f32.powf(self.get_interval_by_degree(degree) as f32 / self.key().chroma_size() as f32)
-    }
-
-    fn distance(&self, to: &Self::ToneLike) -> Option<Degree> {
-        let distance = self.chroma().distance(&self.key(), to) as i32;
-        match self.distances().iter().position(|d| d == &distance) {
-            Some(index) => Some(Degree(index + 1)),
-            None => None,
-        }
+    /// Returns a distance of `key` to `other` as `Degree`.
+    /// - If `other` is not on this scale, returns `None`.
+    fn get_distance(&self, other: &Self::ToneLike) -> Option<Degree> {
+        let interval = self.chroma().get_interval(self.key(), other);
+        self.intervals()
+            .iter()
+            .position(|&i| i == interval)
+            .map(|i| Degree::new(i + 1))
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Hash)]
-pub struct Degree(usize);
+#[derive(Debug, Clone, Copy)]
+pub struct ToneIter<'a, S> {
+    scale: &'a S,
+    index: usize,
+}
 
-impl Degree {
-    pub fn new(value: usize) -> Self {
-        Degree(value)
+impl<'a, S> ToneIter<'a, S> {
+    pub fn new(scale: &'a S) -> Self {
+        Self { scale, index: 0 }
     }
+}
 
-    pub fn value(&self) -> usize {
-        self.0
+impl<'a, S: ScaleLike> Iterator for ToneIter<'a, S> {
+    type Item = &'a S::ToneLike;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let tone = if self.index < self.scale.intervals().len() {
+            let interval = self.scale.intervals().get(self.index).unwrap();
+            let index = (self.scale.key().step() + interval.value()) % self.scale.chroma().size();
+            self.scale.chroma().get(index)
+        } else {
+            None
+        };
+        self.index += 1;
+        tone
     }
 }
