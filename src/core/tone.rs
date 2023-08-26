@@ -5,10 +5,22 @@ pub trait ChromaLike: Sized {
 
     /// Retunes a `ToneLike` that places in given index.
     /// - Returns `None` if given index is out of bounds.
-    fn get(&self, index: usize) -> Option<&Self::Tone>;
+    fn get_exactly(&self, index: usize) -> Option<&Self::Tone>;
 
     /// Returns a size of this chroma.
     fn size(&self) -> usize;
+
+    /// Returns a `ToneLike` that places in given index.
+    /// - If `index > size`, `index` will be `index % size`.
+    /// - If `index < 0`, `index` will be `size + index % size`.
+    fn get(&self, index: i32) -> &Self::Tone {
+        let index = index % self.size() as i32;
+        if index >= 0 {
+            self.get_exactly(index as usize).unwrap()
+        } else {
+            self.get_exactly(self.size() + index as usize).unwrap()
+        }
+    }
 
     fn tones_with_start(&self, start: &Self::Tone) -> ToneIter<'_, Self> {
         let offset = start.step();
@@ -51,8 +63,8 @@ impl<'a, C: ChromaLike> Iterator for ToneIter<'a, C> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let item = if self.index < self.chroma.size() {
-            let step = (self.offset + self.index) % self.chroma.size();
-            Some(self.chroma.get(step).unwrap())
+            let step = self.offset + self.index;
+            Some(self.chroma.get(step as i32))
         } else {
             None
         };

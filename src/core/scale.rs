@@ -55,8 +55,8 @@ impl<'a, S: ScaleLike> Iterator for ToneIter<'a, S> {
     fn next(&mut self) -> Option<Self::Item> {
         let tone = if self.index < self.scale.intervals().len() {
             let interval = self.scale.intervals().get(self.index).unwrap();
-            let index = (self.scale.key().step() + interval.value()) % self.scale.chroma().size();
-            self.scale.chroma().get(index)
+            let index = self.scale.key().step() + interval.value();
+            Some(self.scale.chroma().get(index as i32))
         } else {
             None
         };

@@ -117,7 +117,7 @@ impl Default for Chroma {
 impl ChromaLike for Chroma {
     type Tone = Tone;
 
-    fn get(&self, index: usize) -> Option<&Self::Tone> {
+    fn get_exactly(&self, index: usize) -> Option<&Self::Tone> {
         self.0.get(index)
     }
 
