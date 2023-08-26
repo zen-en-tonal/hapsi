@@ -1,20 +1,26 @@
 use crate::prelude::*;
 
-pub fn detect_scale(tones: &[Tone]) -> Option<Diatonic> {
-    let mut scales = Chroma
+pub fn detect_scale(tones: &[Tone]) -> Diatonic {
+    Chroma
         .tones_with_start(&Tone::new(C, Natural))
         .into_iter()
-        .map(|t| Diatonic::major(&t.try_into().unwrap()));
-    scales.find(|s| s.is_satisfy(tones))
+        .map(|t| Diatonic::major(&t.try_into().unwrap()))
+        .map(|scale| (scale.score(tones), scale))
+        .max_by_key(|t| t.0)
+        .unwrap()
+        .1
 }
 
 pub trait Detect {
-    fn is_satisfy(&self, tone: &[Tone]) -> bool;
+    fn score(&self, tones: &[Tone]) -> i32;
 }
 
 impl<T: Scale<ToneLike = Tone, ChromaLike = Chroma>> Detect for T {
-    fn is_satisfy(&self, tones: &[Tone]) -> bool {
-        tones.into_iter().all(|tone| self.tones().contains(tone))
+    fn score(&self, tones: &[Tone]) -> i32 {
+        tones
+            .iter()
+            .map(|t| if self.is_on_scale(t) { 1 } else { 0 })
+            .sum()
     }
 }
 
@@ -25,8 +31,16 @@ mod tests {
 
     #[test]
     fn detect() {
-        let tones = vec![Tone::new(C, Natural), Tone::new(A, Natural)];
+        let tones = vec![
+            Tone::new(C, Natural),
+            Tone::new(D, Natural),
+            Tone::new(E, Natural),
+            Tone::new(F, Natural),
+            Tone::new(G, Natural),
+            Tone::new(A, Natural),
+            Tone::new(B, Natural),
+        ];
         let scale = detect_scale(tones.as_slice());
-        assert_eq!(scale, Some(Diatonic::major(&Tone::new(C, Natural))))
+        assert_eq!(scale, Diatonic::major(&Tone::new(C, Natural)))
     }
 }
