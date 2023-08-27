@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Takeru KODAMA <zen.en.tonal@gmail.com>"]
 description = "A music theory package"
 repository = "https://github.com/zen-en-tonal/hapsi"
-license-file = "LICENSE"
+license = "MIT"
 keywords = ["music"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
