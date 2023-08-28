@@ -26,24 +26,56 @@ pub trait ScaleLike: Sized {
         self.tones().any(|t| t == tone)
     }
 
-    /// Returns a distance of `key` to `other` as `Degree`.
-    /// - If `other` is not on this scale, returns `None`.
-    fn get_distance(&self, other: &Self::ToneLike) -> Option<Degree> {
-        let interval = self.chroma().get_interval(self.key(), other);
-        self.intervals()
-            .iter()
-            .position(|&i| i == interval)
-            .map(|i| Degree::new(i + 1))
+    /// Returns a distance as `Degree`.
+    /// - If `from` either `to` are not on this scale, returns `None`.
+    fn get_distance(&self, from: &Self::ToneLike, to: &Self::ToneLike) -> Option<Degree> {
+        let from_interval = self.chroma().get_interval(self.key(), from);
+        let to_interval = self.chroma().get_interval(self.key(), to);
+        let iter = self.intervals().iter();
+        match (
+            iter.clone().position(|&i| i == from_interval),
+            iter.clone().position(|&i| i == to_interval),
+        ) {
+            (Some(from), Some(to)) => Some(if from <= to {
+                Degree::new(to - from + 1).unwrap()
+            } else {
+                Degree::new(to + self.intervals().len() - from + 1).unwrap()
+            }),
+            (_, _) => None,
+        }
     }
 
-    /// Returns a `Tone` by `Degree` that represents a distance from the `self.key()`.
-    fn get_tone_by_degree(&self, degree: &Degree) -> &Self::ToneLike {
-        let interval = self
-            .intervals()
-            .get((degree.value() - 1) % self.intervals().len())
-            .unwrap();
-        self.chroma()
-            .get((self.key().step() + interval.value()) as i32)
+    /// Returns a distance from `self.key()`.
+    /// - if `to` is not on this scale, returns `None`.
+    fn get_distance_from_key(&self, to: &Self::ToneLike) -> Option<Degree> {
+        self.get_distance(self.key(), to)
+    }
+
+    /// Returns a `Tone` by `Degree` that represents a distance.
+    /// - if `from` is not on this scale, returns `None`.
+    fn get_tone_by_degree(
+        &self,
+        from: &Self::ToneLike,
+        degree: &Degree,
+    ) -> Option<&Self::ToneLike> {
+        let Some(interval) = self.degree_to_interval(from, degree) else {
+            return None;
+        };
+        Some(self.chroma().get((from.step() + interval.value()) as i32))
+    }
+
+    /// Returns a `Tone` by `Degree` that represents a distance from `self.key()`.
+    fn get_tone_by_degree_from_key(&self, degree: &Degree) -> &Self::ToneLike {
+        self.get_tone_by_degree(self.key(), degree).unwrap()
+    }
+
+    fn degree_to_interval(&self, from: &Self::ToneLike, degree: &Degree) -> Option<&Interval> {
+        let interval_from_key = self.chroma().get_interval(self.key(), from);
+        let Some(index) = self.intervals().iter().position(|&i| i == interval_from_key) else {
+            return None;
+        };
+        self.intervals()
+            .get((index + degree.value() - 1) % self.intervals().len())
     }
 }
 

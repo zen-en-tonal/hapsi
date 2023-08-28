@@ -1,3 +1,5 @@
+use std::{error::Error, fmt::Display};
+
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct Interval(usize);
 
@@ -33,11 +35,30 @@ impl From<Interval> for usize {
 pub struct Degree(usize);
 
 impl Degree {
-    pub fn new(value: usize) -> Self {
-        Degree(value)
+    /// Returns a `Degree` instance.
+    ///
+    /// # Errors
+    /// - if `value` is less than 1, returns error.
+    pub fn new(value: usize) -> Result<Self, DegreeConstructError> {
+        if value < 1 {
+            Err(DegreeConstructError)
+        } else {
+            Ok(Degree(value))
+        }
     }
 
     pub fn value(&self) -> usize {
         self.0
     }
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct DegreeConstructError;
+
+impl Display for DegreeConstructError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "degree must be greater than 0")
+    }
+}
+
+impl Error for DegreeConstructError {}

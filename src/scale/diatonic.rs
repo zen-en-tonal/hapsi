@@ -91,29 +91,50 @@ mod tests {
     fn degree() {
         let scale = super::Diatonic::minor(&Tone::new(A, Natural));
         assert_eq!(
-            scale.get_distance(&Tone::new(A, Natural)),
-            Some(Degree::new(1))
+            scale.get_distance_from_key(&Tone::new(A, Natural)),
+            Some(Degree::new(1).unwrap())
         );
         assert_eq!(
-            scale.get_distance(&Tone::new(B, Natural)),
-            Some(Degree::new(2))
+            scale.get_distance_from_key(&Tone::new(B, Natural)),
+            Some(Degree::new(2).unwrap())
         );
         assert_eq!(
-            scale.get_distance(&Tone::new(C, Natural)),
-            Some(Degree::new(3))
+            scale.get_distance_from_key(&Tone::new(C, Natural)),
+            Some(Degree::new(3).unwrap())
         );
-        assert_eq!(scale.get_distance(&Tone::new(C, Sharp)), None);
+        assert_eq!(scale.get_distance_from_key(&Tone::new(C, Sharp)), None);
+    }
+
+    #[test]
+    fn get_degree() {
+        let scale = super::Diatonic::minor(&Tone::new(A, Natural));
+        assert_eq!(
+            scale.get_distance(&Tone::new(A, Natural), &Tone::new(A, Natural)),
+            Some(Degree::new(1).unwrap())
+        );
+        assert_eq!(
+            scale.get_distance(&Tone::new(C, Natural), &Tone::new(A, Natural)),
+            Some(Degree::new(6).unwrap())
+        );
+        assert_eq!(
+            scale.get_distance(&Tone::new(A, Natural), &Tone::new(C, Natural)),
+            Some(Degree::new(3).unwrap())
+        );
+        assert_eq!(
+            scale.get_distance(&Tone::new(A, Natural), &Tone::new(A, Sharp)),
+            None
+        );
     }
 
     #[test]
     fn get_tone_by_degree() {
         let scale = super::Diatonic::minor(&Tone::new(A, Natural));
         assert_eq!(
-            scale.get_tone_by_degree(&Degree::new(1)),
+            scale.get_tone_by_degree_from_key(&Degree::new(1).unwrap()),
             &Tone::new(A, Natural)
         );
         assert_eq!(
-            scale.get_tone_by_degree(&Degree::new(13)),
+            scale.get_tone_by_degree_from_key(&Degree::new(13).unwrap()),
             &Tone::new(F, Natural)
         );
     }
