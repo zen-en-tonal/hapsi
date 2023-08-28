@@ -35,6 +35,16 @@ pub trait ScaleLike: Sized {
             .position(|&i| i == interval)
             .map(|i| Degree::new(i + 1))
     }
+
+    /// Returns a `Tone` by `Degree` that represents a distance from the `self.key()`.
+    fn get_tone_by_degree(&self, degree: &Degree) -> &Self::ToneLike {
+        let interval = self
+            .intervals()
+            .get((degree.value() - 1) % self.intervals().len())
+            .unwrap();
+        self.chroma()
+            .get((self.key().step() + interval.value()) as i32)
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
