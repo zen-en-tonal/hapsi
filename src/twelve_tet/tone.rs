@@ -95,7 +95,7 @@ impl Hash for Tone {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Chroma([Tone; 12]);
 
 impl Chroma {
