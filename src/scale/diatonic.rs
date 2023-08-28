@@ -105,10 +105,16 @@ mod tests {
         assert_eq!(scale.get_distance(&Tone::new(C, Sharp)), None);
     }
 
-    // #[test]
-    // fn get_by_degree() {
-    //     let scale = super::Diatonic::minor(&Tone::new(A, Natural));
-    //     assert_eq!(scale.get_by_degree(&Degree::new(1)), Tone::new(A, Natural));
-    //     assert_eq!(scale.get_by_degree(&Degree::new(13)), Tone::new(F, Natural));
-    // }
+    #[test]
+    fn get_tone_by_degree() {
+        let scale = super::Diatonic::minor(&Tone::new(A, Natural));
+        assert_eq!(
+            scale.get_tone_by_degree(&Degree::new(1)),
+            &Tone::new(A, Natural)
+        );
+        assert_eq!(
+            scale.get_tone_by_degree(&Degree::new(13)),
+            &Tone::new(F, Natural)
+        );
+    }
 }
