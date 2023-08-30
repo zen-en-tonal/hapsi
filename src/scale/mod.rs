@@ -1,5 +1,5 @@
 mod diatonic;
-mod pentatonic;
+// mod pentatonic;
 
 pub use diatonic::Diatonic;
-pub use pentatonic::Pentatonic;
+// pub use pentatonic::Pentatonic;

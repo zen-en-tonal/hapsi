@@ -1,9 +1,9 @@
 mod distance;
+mod keyboard;
+mod number;
 mod pitch;
-mod scale;
-mod tone;
 
 pub use distance::*;
+pub use keyboard::*;
+pub use number::*;
 pub use pitch::*;
-pub use scale::*;
-pub use tone::{ChromaLike, ToneLike};

@@ -1,29 +1,31 @@
-use super::tone::ToneLike;
-
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Pitch<T> {
-    tone: T,
+    class: T,
     oct: usize,
 }
 
 impl<T> Pitch<T> {
-    pub fn new(tone: T, oct: usize) -> Self {
-        Self { tone, oct }
+    pub fn new(class: T, oct: usize) -> Self {
+        Self { class, oct }
     }
 
-    pub fn tone(&self) -> &T {
-        &self.tone
+    pub fn class(&self) -> &T {
+        &self.class
     }
 
     pub fn oct(&self) -> usize {
         self.oct
     }
-}
 
-impl<T: ToneLike> Pitch<T> {
-    pub fn frequency(&self, ref_freq: f32) -> f32 {
-        ref_freq
-            * self.oct() as f32
-            * 2.0_f32.powf(self.tone().step() as f32 / self.tone().chroma_size() as f32)
+    pub fn as_ref(&self) -> Pitch<&T> {
+        Pitch::new(self.class(), self.oct())
     }
 }
+
+// impl<T: PitchClassLike> Pitch<T> {
+//     pub fn frequency(&self, ref_freq: f32) -> f32 {
+//         ref_freq
+//             * self.oct() as f32
+//             * 2.0_f32.powf(self.class().step() as f32 / self.class().chroma_size() as f32)
+//     }
+// }

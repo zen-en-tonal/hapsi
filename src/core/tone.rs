@@ -1,11 +1,15 @@
-use super::distance::Interval;
+use super::{distance::Interval, number::Number, Pitch};
 
-pub trait ChromaLike: Sized {
-    type Tone: ToneLike;
+pub trait Keyboard: Sized {
+    type PitchClass;
 
     /// Retunes a `ToneLike` that places in given index.
     /// - Returns `None` if given index is out of bounds.
-    fn get_exactly(&self, index: usize) -> Option<&Self::Tone>;
+    fn get_class<T: Number>(&self, number: &T) -> Option<&Self::PitchClass>;
+
+    fn get_class_cycly(&self, index: usize) -> &Self::PitchClass {
+        self.get_class(index % self.size()).unwrap()
+    }
 
     /// Returns a size of this chroma.
     fn size(&self) -> usize;
@@ -13,68 +17,65 @@ pub trait ChromaLike: Sized {
     /// Returns a `ToneLike` that places in given index.
     /// - If `index > size`, `index` will be `index % size`.
     /// - If `index < 0`, `index` will be `size + index % size`.
-    fn get(&self, index: i32) -> &Self::Tone {
-        let index = index % self.size() as i32;
-        if index >= 0 {
-            self.get_exactly(index as usize).unwrap()
-        } else {
-            self.get_exactly(self.size() + index as usize).unwrap()
-        }
+    fn get_pitch(&self, index: usize) -> Pitch<&Self::PitchClass> {
+        let oct = index / self.size();
+        let index = index % self.size();
+        let class = self.get_class(index).unwrap();
+        Pitch::new(class, oct)
     }
 
-    fn tones_with_start(&self, start: &Self::Tone) -> ToneIter<'_, Self> {
-        let offset = start.step();
-        ToneIter::new(self, offset)
-    }
-
-    fn tones(&self) -> ToneIter<'_, Self> {
-        ToneIter::new(self, 0)
+    fn iter(&self) -> ClassIter<'_, Self> {
+        ClassIter::new(self)
     }
 
     /// Returns an `Interval` of `from` and `to`.
-    fn get_interval(&self, from: &Self::Tone, to: &Self::Tone) -> Interval {
-        if from.step() <= to.step() {
-            Interval::new(from.step(), to.step())
-        } else {
-            Interval::new(from.step(), to.step() + self.size())
-        }
+    fn get_interval(
+        &self,
+        from: &Pitch<Self::PitchClass>,
+        to: &Pitch<Self::PitchClass>,
+    ) -> Interval {
+        let from_step = from.oct() * self.size() + from.class().step();
+        let to_step = to.oct() * self.size() + to.class().step();
+        Interval::new(from_step, to_step)
+    }
+
+    fn get_step(&self, pitch: &Pitch<Self::PitchClass>) -> usize {
+        pitch.oct() * self.size() + pitch.class().step()
     }
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct ToneIter<'a, C> {
+pub struct ClassIter<'a, C> {
     chroma: &'a C,
     index: usize,
     offset: usize,
 }
 
-impl<'a, C> ToneIter<'a, C> {
-    pub fn new(chroma: &'a C, offset: usize) -> Self {
+impl<'a, C> ClassIter<'a, C> {
+    pub fn new(chroma: &'a C) -> Self {
         Self {
             chroma,
             index: 0,
-            offset,
+            offset: 0,
         }
+    }
+
+    pub fn offset(&mut self, offset: usize) {
+        self.offset = offset
     }
 }
 
-impl<'a, C: ChromaLike> Iterator for ToneIter<'a, C> {
-    type Item = &'a C::Tone;
+impl<'a, C: Keyboard> Iterator for ClassIter<'a, C> {
+    type Item = &'a C::PitchClass;
 
     fn next(&mut self) -> Option<Self::Item> {
         let item = if self.index < self.chroma.size() {
             let step = self.offset + self.index;
-            Some(self.chroma.get(step as i32))
+            Some(self.chroma.get_class(step).unwrap())
         } else {
             None
         };
         self.index += 1;
         item
     }
-}
-
-pub trait ToneLike: PartialEq {
-    fn step(&self) -> usize;
-
-    fn chroma_size(&self) -> usize;
 }

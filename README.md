@@ -8,7 +8,7 @@ A package that represents a musical concept.
 use hapsi::prelude::*;
 
 let scale = Diatonic::major(&"C".parse().unwrap());
-let mut tones = scale.tones();
+let mut tones = scale.classes();
 
 assert_eq!(tones.next(), Some(&"C".parse().unwrap()));
 assert_eq!(tones.next(), Some(&"D".parse().unwrap()));

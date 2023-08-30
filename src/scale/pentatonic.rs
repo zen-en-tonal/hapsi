@@ -4,7 +4,7 @@ use crate::prelude::*;
 pub struct Pentatonic {
     key: Tone,
     quality: Quality,
-    chroma: Chroma,
+    chroma: Keyboard,
     distances: [Interval; 5],
 }
 
@@ -13,7 +13,7 @@ impl Pentatonic {
         Self {
             key: *key,
             quality: Quality::Major,
-            chroma: Chroma::new(),
+            chroma: Keyboard::new(),
             distances: [0, 2, 4, 7, 9].map(Into::<Interval>::into),
         }
     }
@@ -22,7 +22,7 @@ impl Pentatonic {
         Self {
             key: *key,
             quality: Quality::Minor,
-            chroma: Chroma::new(),
+            chroma: Keyboard::new(),
             distances: [0, 3, 5, 7, 10].map(Into::<Interval>::into),
         }
     }
@@ -41,7 +41,7 @@ pub enum Quality {
 impl ScaleLike for Pentatonic {
     type ToneLike = Tone;
 
-    type ChromaLike = Chroma;
+    type ChromaLike = Keyboard;
 
     fn key(&self) -> &Self::ToneLike {
         &self.key
@@ -63,7 +63,7 @@ mod tests {
     #[test]
     fn major() {
         let scale = super::Pentatonic::major(&Tone::new(C, Natural));
-        let mut tones = scale.tones();
+        let mut tones = scale.classes();
         assert_eq!(tones.next(), Some(&Tone::new(C, Natural)));
         assert_eq!(tones.next(), Some(&Tone::new(D, Natural)));
         assert_eq!(tones.next(), Some(&Tone::new(E, Natural)));
@@ -75,7 +75,7 @@ mod tests {
     #[test]
     fn minor() {
         let scale = super::Pentatonic::minor(&Tone::new(A, Natural));
-        let mut tones = scale.tones();
+        let mut tones = scale.classes();
         assert_eq!(tones.next(), Some(&Tone::new(A, Natural)));
         assert_eq!(tones.next(), Some(&Tone::new(C, Natural)));
         assert_eq!(tones.next(), Some(&Tone::new(D, Natural)));

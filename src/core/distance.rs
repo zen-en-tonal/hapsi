@@ -1,33 +1,37 @@
 use std::{error::Error, fmt::Display};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
-pub struct Interval(usize);
+pub struct Interval(i32);
 
 impl Interval {
     pub fn new<T: Into<usize>>(a: T, b: T) -> Self {
         let a: usize = a.into();
         let b: usize = b.into();
         if a > b {
-            Self(a - b)
+            Self(-1 * (a - b) as i32)
         } else {
-            Self(b - a)
+            Self((b - a) as i32)
         }
     }
 
     pub fn value(&self) -> usize {
-        self.0
+        self.0.abs() as usize
+    }
+
+    pub fn direction(&self) -> i32 {
+        self.0.signum()
     }
 }
 
 impl From<usize> for Interval {
     fn from(value: usize) -> Self {
-        Interval(value)
+        Interval(value as i32)
     }
 }
 
-impl From<Interval> for usize {
-    fn from(value: Interval) -> Self {
-        value.0
+impl From<i32> for Interval {
+    fn from(value: i32) -> Self {
+        Interval(value)
     }
 }
 
