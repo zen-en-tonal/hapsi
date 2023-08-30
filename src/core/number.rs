@@ -1,8 +1,6 @@
-use std::ops::{AddAssign, SubAssign};
-
 /// Represents a note in usize.
 /// e.g. MIDI number
-pub trait Number: AddAssign + SubAssign + Sized + Clone + Copy {
+pub trait Number: Sized + Clone + Copy {
     fn value(&self) -> usize;
 }
 
@@ -18,23 +16,26 @@ impl Number for usize {
     }
 }
 
-pub struct Cycle<T> {
-    inner: T,
+pub struct Cycle {
+    inner: usize,
     len: usize,
 }
 
-impl<T> Cycle<T> {
-    pub fn new(inner: T, len: usize) -> Cycle<T> {
-        Cycle { inner, len }
+impl Cycle {
+    pub fn new<T: Number>(inner: T, len: usize) -> Cycle {
+        Cycle {
+            inner: inner.value(),
+            len,
+        }
     }
 }
 
-impl<T: Number> Cycle<T> {
+impl Cycle {
     pub fn value(&self) -> usize {
         self.inner.value() % self.len
     }
 
-    pub fn increment(&mut self, value: T) {
+    pub fn increment(&mut self, value: usize) {
         self.inner += value;
     }
 

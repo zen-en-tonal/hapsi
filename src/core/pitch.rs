@@ -22,6 +22,15 @@ impl<T> Pitch<T> {
     }
 }
 
+impl<T: Clone> Pitch<&T> {
+    pub fn deref(self) -> Pitch<T> {
+        Pitch {
+            class: self.class.clone(),
+            oct: self.oct,
+        }
+    }
+}
+
 // impl<T: PitchClassLike> Pitch<T> {
 //     pub fn frequency(&self, ref_freq: f32) -> f32 {
 //         ref_freq

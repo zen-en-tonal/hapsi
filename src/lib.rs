@@ -1,6 +1,6 @@
-// #![doc = include_str!("../README.md")]
+#![doc = include_str!("../README.md")]
 
-// pub mod chord;
+pub mod chord;
 pub mod core;
 pub mod parse;
 pub mod scale;

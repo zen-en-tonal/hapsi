@@ -5,10 +5,13 @@ use super::{distance::Degree, pitch::Pitch};
 pub use super::number::*;
 
 pub trait Octave: Sized {
-    type PitchClass: PartialEq;
+    type PitchClass: PartialEq + PartialOrd;
 
-    fn get_class(&self, number: &Cycle<impl Number>) -> &Self::PitchClass;
+    /// Returns a reference of `PitchClass` on given `number`.
+    fn get_class(&self, number: &Cycle) -> &Self::PitchClass;
 
+    /// Returns a `number` as `usize` of given `class`.
+    /// - Returns `None` if given `class` is not found on this `Octave`.
     fn get_number(&self, class: &Self::PitchClass) -> Option<usize>;
 
     fn len(&self) -> usize;
@@ -16,14 +19,14 @@ pub trait Octave: Sized {
     fn iter(&self) -> ClassIter<'_, Self> {
         ClassIter {
             inner: self,
-            cycle: Cycle::new(0, self.len()),
+            cycle: Cycle::new(0_usize, self.len()),
         }
     }
 }
 
 pub struct ClassIter<'a, Oct> {
     inner: &'a Oct,
-    cycle: Cycle<usize>,
+    cycle: Cycle,
 }
 
 impl<'a, Oct: Octave> Iterator for ClassIter<'a, Oct> {
@@ -39,10 +42,10 @@ impl<'a, Oct: Octave> Iterator for ClassIter<'a, Oct> {
     }
 }
 
-impl<V: PartialEq> Octave for HashMap<usize, V> {
+impl<V: PartialEq + PartialOrd> Octave for HashMap<usize, V> {
     type PitchClass = V;
 
-    fn get_class(&self, number: &Cycle<impl Number>) -> &Self::PitchClass {
+    fn get_class(&self, number: &Cycle) -> &Self::PitchClass {
         self.get(&number.value()).unwrap()
     }
 
@@ -55,10 +58,10 @@ impl<V: PartialEq> Octave for HashMap<usize, V> {
     }
 }
 
-impl<V: PartialEq> Octave for Vec<V> {
+impl<V: PartialEq + PartialOrd> Octave for Vec<V> {
     type PitchClass = V;
 
-    fn get_class(&self, number: &Cycle<impl Number>) -> &Self::PitchClass {
+    fn get_class(&self, number: &Cycle) -> &Self::PitchClass {
         self.get(number.value()).unwrap()
     }
 
@@ -92,9 +95,15 @@ impl<Oct: Octave> Keyboard<Oct> {
     }
 
     pub fn as_number(&self, pitch: &Pitch<Oct::PitchClass>) -> Option<usize> {
+        let start = self.get_class(&0_usize);
+        let oct = if pitch.class() < start {
+            pitch.oct() - 1
+        } else {
+            pitch.oct()
+        };
         self.0
             .get_number(pitch.class())
-            .map(|x| x + self.0.len() * pitch.oct())
+            .map(|x| x + self.0.len() * oct)
     }
 
     pub fn class_iter(&self) -> ClassIter<'_, Oct> {
@@ -103,6 +112,7 @@ impl<Oct: Octave> Keyboard<Oct> {
 }
 
 pub trait Scale {
+    /// Returns a `number` as `usize` that mapped from given `number`.
     fn convert(&self, number: impl Number) -> usize;
 
     fn len(&self) -> usize;
@@ -132,7 +142,7 @@ impl<S, O> Scaled<S, O> {
 impl<S: Scale, O: Octave> Octave for Scaled<S, O> {
     type PitchClass = O::PitchClass;
 
-    fn get_class(&self, number: &Cycle<impl Number>) -> &Self::PitchClass {
+    fn get_class(&self, number: &Cycle) -> &Self::PitchClass {
         let cycle = Cycle::new(self.scaler.convert(number.value()), self.oct.len());
         self.oct.get_class(&cycle)
     }

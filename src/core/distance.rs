@@ -1,5 +1,7 @@
 use std::{error::Error, fmt::Display};
 
+use super::Number;
+
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct Interval(i32);
 
@@ -53,6 +55,12 @@ impl Degree {
 
     pub fn value(&self) -> usize {
         self.0
+    }
+}
+
+impl Number for Degree {
+    fn value(&self) -> usize {
+        self.0 - 1
     }
 }
 

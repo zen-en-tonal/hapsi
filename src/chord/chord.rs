@@ -1,56 +1,103 @@
-use crate::core::*;
+use std::collections::HashMap;
 
-#[derive(Debug, Clone, PartialEq, Hash)]
-pub struct Chord(Vec<Degree>);
+use once_cell::sync::Lazy;
 
-#[derive(Debug, Clone, Copy, PartialEq, Hash)]
+use crate::{
+    core::Chord as CoreChord,
+    core::*,
+    prelude::{Tone, Twelve},
+};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Chord<T> {
+    root: T,
+    quality: Quality,
+}
+
+impl<T> Chord<T> {
+    pub fn new(root: T, quality: Quality) -> Self {
+        Self { root, quality }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Quality {
     Major,
     Minor,
+    Dim,
+    Aug,
+    Major7,
+    Minor7,
 }
 
-impl Chord {
-    pub fn degrees(&self) -> Vec<Degree> {
-        self.0.clone()
+static ENUM_QUALITY: Lazy<[Quality; 6]> = Lazy::new(|| {
+    [
+        Quality::Major,
+        Quality::Minor,
+        Quality::Dim,
+        Quality::Aug,
+        Quality::Major7,
+        Quality::Minor7,
+    ]
+});
+
+impl Quality {
+    pub fn enumerate() -> std::slice::Iter<'static, Quality> {
+        ENUM_QUALITY.iter()
     }
-
-    pub fn new(vec: Vec<Degree>) -> Self {
-        Chord(vec)
-    }
 }
 
-pub trait ChordScale {
-    type ToneLike: ToneLike;
+static QUALITY_TO_INTERVAL: Lazy<HashMap<Quality, Vec<Interval>>> = Lazy::new(|| {
+    let mut hash = HashMap::<Quality, Vec<Interval>>::default();
+    hash.insert(Quality::Major, vec![4.into(), 7.into()]);
+    hash.insert(Quality::Minor, vec![3.into(), 7.into()]);
+    hash.insert(Quality::Dim, vec![3.into(), 6.into()]);
+    hash.insert(Quality::Aug, vec![4.into(), 8.into()]);
+    hash.insert(Quality::Major7, vec![4.into(), 7.into(), 11.into()]);
+    hash.insert(Quality::Minor7, vec![3.into(), 7.into(), 11.into()]);
+    hash
+});
 
-    fn avoids(&self, chord: &Chord) -> Vec<Self::ToneLike>;
-
-    fn chord_tones(&self, chord: &Chord) -> Vec<Self::ToneLike>;
-}
-
-impl<T: ScaleLike> ChordScale for T {
-    type ToneLike = T::ToneLike;
-
-    fn chord_tones(&self, chord: &Chord) -> Vec<Self::ToneLike> {
-        chord
-            .degrees()
+impl Chord<Tone> {
+    pub fn into_class(self) -> CoreChord<Tone> {
+        let keyboard = Keyboard::new(Twelve);
+        let intervals = QUALITY_TO_INTERVAL.get(&self.quality).unwrap();
+        let root_value: usize = self.root.into();
+        let others = intervals
             .iter()
-            .map(|d| self.get_by_degree(d))
-            .collect()
+            .map(|i| keyboard.get_class(&(root_value + i.value())).clone())
+            .collect();
+        CoreChord::new(self.root, others)
     }
+}
 
-    fn avoids(&self, chord: &Chord) -> Vec<Self::ToneLike> {
-        let mut vec = self
-            .chord_tones(chord)
-            .into_iter()
-            .flat_map(|t| {
-                vec![
-                    self.chroma().get(t.step() as i32 - 1),
-                    self.chroma().get(t.step() as i32 + 1),
-                ]
-            })
-            .filter(|t| self.is_on_scale(t))
-            .collect::<Vec<Self::ToneLike>>();
-        vec.dedup();
-        vec
+impl Chord<Pitch<Tone>> {
+    pub fn into_pitch(self) -> CoreChord<Pitch<Tone>> {
+        let keyboard = Keyboard::new(Twelve);
+        let intervals = QUALITY_TO_INTERVAL.get(&self.quality).unwrap();
+        let root_value: usize = keyboard.as_number(&self.root).unwrap();
+        let others = intervals
+            .iter()
+            .map(|i| keyboard.get_pitch(&(root_value + i.value())).deref())
+            .collect();
+        CoreChord::new(self.root, others)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::Chord;
+
+    #[test]
+    fn into_class() {
+        let mut chord = Chord::new("A".parse().unwrap(), super::Quality::Major7)
+            .into_class()
+            .into_vec()
+            .into_iter();
+        assert_eq!(chord.next(), Some("A".parse().unwrap()));
+        assert_eq!(chord.next(), Some("Cs".parse().unwrap()));
+        assert_eq!(chord.next(), Some("E".parse().unwrap()));
+        assert_eq!(chord.next(), Some("Gs".parse().unwrap()));
     }
 }

@@ -8,26 +8,20 @@ pub struct Diatonic {
 }
 
 impl Diatonic {
-    pub fn major(key: &Tone) -> Scaled<Diatonic, Twelve> {
-        Scaled::new(
-            Self {
-                key: *key,
-                quality: Quality::Major,
-                distances: [0, 2, 4, 5, 7, 9, 11],
-            },
-            Twelve,
-        )
+    pub fn major(key: &Tone) -> Diatonic {
+        Self {
+            key: *key,
+            quality: Quality::Major,
+            distances: [0, 2, 4, 5, 7, 9, 11],
+        }
     }
 
-    pub fn minor(key: &Tone) -> Scaled<Diatonic, Twelve> {
-        Scaled::new(
-            Self {
-                key: *key,
-                quality: Quality::Minor,
-                distances: [0, 2, 3, 5, 7, 8, 10],
-            },
-            Twelve,
-        )
+    pub fn minor(key: &Tone) -> Diatonic {
+        Self {
+            key: *key,
+            quality: Quality::Minor,
+            distances: [0, 2, 3, 5, 7, 8, 10],
+        }
     }
 
     pub fn quality(&self) -> Quality {
@@ -58,7 +52,8 @@ mod tests {
 
     #[test]
     fn major() {
-        let scaled = super::Diatonic::major(&Tone::new(C, Natural));
+        let scale = super::Diatonic::major(&Tone::new(C, Natural));
+        let scaled = Scaled::new(scale, Twelve);
         let keyboard = Keyboard::new(scaled);
         let mut tones = keyboard.class_iter();
         assert_eq!(tones.next(), Some(&Tone::new(C, Natural)));
@@ -73,7 +68,8 @@ mod tests {
 
     #[test]
     fn minor() {
-        let scaled = super::Diatonic::minor(&Tone::new(A, Natural));
+        let scale = super::Diatonic::minor(&Tone::new(A, Natural));
+        let scaled = Scaled::new(scale, Twelve);
         let keyboard = Keyboard::new(scaled);
         let mut tones = keyboard.class_iter();
         assert_eq!(tones.next(), Some(&Tone::new(A, Natural)));

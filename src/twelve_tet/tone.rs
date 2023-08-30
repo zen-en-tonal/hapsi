@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use once_cell::sync::Lazy;
 
-use crate::core::{Cycle, Number, Octave};
+use crate::core::{Cycle, Octave};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Tone {
     tone: ToneSymbol,
     accidental: AccidentalSymbol,
@@ -36,7 +36,7 @@ impl Tone {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(i32)]
 pub enum ToneSymbol {
     C = 0,
@@ -54,7 +54,7 @@ impl Default for ToneSymbol {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(i32)]
 pub enum AccidentalSymbol {
     Flat = -1,
@@ -99,7 +99,7 @@ pub struct Twelve;
 impl Octave for Twelve {
     type PitchClass = Tone;
 
-    fn get_class(&self, number: &Cycle<impl Number>) -> &Self::PitchClass {
+    fn get_class(&self, number: &Cycle) -> &Self::PitchClass {
         TWELVE_MAP.get_class(number)
     }
 
